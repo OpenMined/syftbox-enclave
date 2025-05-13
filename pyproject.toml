@@ -4,9 +4,7 @@ version = "0.1.0"
 description = "SyftBox Enclave provides an interface for Enclave Deployments in SyftBox."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "syft-rds>=0.1.1",
-]
+dependencies = []
 
 [build-system]
 requires = ["hatchling"]
@@ -14,5 +12,9 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "cryptography>=44.0.3",
     "ipykernel>=6.29.5",
+    "loguru>=0.7.3",
+    "syft-core>=0.2.3",
+    "syft-rds>=0.1.1",
 ]

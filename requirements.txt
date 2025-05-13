@@ -1,0 +1,4 @@
+cryptography==44.0.3
+syft-core>=0.2.3
+loguru>=0.7.3
+
