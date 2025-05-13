@@ -1,0 +1,11 @@
+[project]
+name = "syftbox-enclave"
+version = "0.1.0"
+description = "SyftBox Enclave provides an interface for Enclave Deployments in SyftBox."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
