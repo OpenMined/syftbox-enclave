@@ -42,7 +42,7 @@ def init_enclave(client: Client):
     # that it intends to execute
     job_dir = app_data_dir / "jobs"
 
-    for folder in ["launch", "running", "done"]:
+    for folder in ["launch", "running", "done", "outputs"]:
         job_folder = job_dir / folder
         job_folder.mkdir(parents=True, exist_ok=True)
 
