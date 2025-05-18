@@ -5,10 +5,13 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from loguru import logger
 
+from utils import validate_config_file
+
 APP_NAME = "enclave"
 KEYS_DIR = "keys"
 PUBLIC_KEY_FILE = "public_key.pem"
 PRIVATE_KEY_FILE = "private_key.pem"
+
 
 
 # Exception name to indicate the state cannot advance
@@ -96,13 +99,26 @@ def create_key_pair(client: Client):
     logger.info(f"Public key saved to {public_key_path}")
 
 def launch_enclave_project(client: Client):
-    pass
+    """
+    Launches the enclave project with the given client.
+    """
+    launch_dir = client.app_data(APP_NAME) / "jobs" / "launch"
+    # Iterates through each folder inside the launch folder and looks for 
+    # config.yaml file and code directory
+    for folder in launch_dir.iterdir():
+        if folder.is_dir():
+            config_file = folder / "config.yaml"
+            code_dir = folder / "code"
+            if not config_file.exists() and not code_dir.exists():
+                logger.warning(f"Config file or code directory not found in {folder}")
+                continue
+            # Check if the config file is valid
+            validate_config_file(config_file)
 
-def advance_enclave_project(client: Client):
-    """
-    Advances the enclave project to the next state.
-    """
-    pass
+            # 
+
+
+
 
 
 if __name__ == "__main__":
@@ -115,14 +131,8 @@ if __name__ == "__main__":
 
     while True:
         
-        try:
-
-            launch_enclave_project(client)
-
-            advance_enclave_project(client)
-
-        except StateNotReady as e:
-            logger.warning(f"State not ready: {e}")
+        # Check if the enclave is ready to launch
+        launch_enclave_project(client)
 
         sleep(4)
     
