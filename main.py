@@ -286,10 +286,8 @@ def run_enclave_project(client: Client):
             )
             # Wait for the process to finish
             process.wait()
-            # Get the output and error messages
-            output, error = process.communicate()
-            logger.info(f"Output: {output}")
-            logger.error(f"Error: {error}")
+            # TODO: Stream Logs
+            
             # Move the folder to the done directory
             shutil.move(folder, done_dir / folder.name)
 
