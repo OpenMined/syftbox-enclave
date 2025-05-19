@@ -16,5 +16,8 @@ dev = [
     "ipykernel>=6.29.5",
     "loguru>=0.7.3",
     "syft-core>=0.2.3",
-    "syft-rds>=0.1.1",
+    "syft-rds",
 ]
+
+[tool.uv.sources]
+syft-rds = { git = "https://github.com/OpenMined/rds.git", rev = "rasswanth/add-enclave-enc" }
