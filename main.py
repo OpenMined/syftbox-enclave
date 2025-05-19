@@ -1,9 +1,11 @@
+import shutil
 from time import sleep
 from syft_core import Client
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from loguru import logger
+import yaml
 
 from utils import validate_config_file
 
@@ -98,27 +100,52 @@ def create_key_pair(client: Client):
         )
     logger.info(f"Public key saved to {public_key_path}")
 
+def verify_data_sources(client: Client, config_file_path: Path) -> bool:
+    """
+    Verifies if all the required files are present in the data sources.
+    """
+    # Load the config file
+    with open(config_file_path, "r") as f:
+        config_file = yaml.safe_load(f)
+
+    # Get the data sources from the config file
+    data_sources = config_file.get("data", [])
+
+    # Check if all the required files are present
+    for source in data_sources:
+        datasite, dataset_id = source
+
+
+    return True
+
+
+
 def launch_enclave_project(client: Client):
     """
     Launches the enclave project with the given client.
     """
     launch_dir = client.app_data(APP_NAME) / "jobs" / "launch"
+    running_dir = client.app_data(APP_NAME) / "jobs" / "running"
     # Iterates through each folder inside the launch folder and looks for 
     # config.yaml file and code directory
     for folder in launch_dir.iterdir():
         if folder.is_dir():
-            config_file = folder / "config.yaml"
+            config_file_path = folder / "config.yaml"
             code_dir = folder / "code"
-            if not config_file.exists() and not code_dir.exists():
+            if not config_file_path.exists() and not code_dir.exists():
                 logger.warning(f"Config file or code directory not found in {folder}")
                 continue
             # Check if the config file is valid
-            validate_config_file(config_file)
+            validate_config_file(config_file_path)
 
-            # 
+            # Check if all the required files are sent by the datasites
+            verify_sources = verify_data_sources(client, config_file_path)
 
-
-
+            # if all the files are present, move the folder to the running directory
+            if verify_sources:
+                logger.info(f"Moving {folder} to running directory")
+                # Move the folder to the running directory
+                shutil.move(folder, running_dir / folder.name)
 
 
 if __name__ == "__main__":
