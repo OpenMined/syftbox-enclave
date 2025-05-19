@@ -1,10 +1,8 @@
 code:
-  entrypoint: main.py
+  entrypoint: entrypoint.py
 
 data:
-  - [do1@openmined.org, 5a0c7c32-f9b6-4d74-bdbf-42547004c2b4]
-  - [do2@openmined.org, d051a30e-8e84-4240-8f45-c5d918439d0f]
+  - [rasswanth@openmined.org, 5a0c7c32-f9b6-4d74-bdbf-42547004c2b4]
 
 output:
-  - do1@openmined.org
-  - do2@openmined.org
+  - rasswanth@openmined.org

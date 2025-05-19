@@ -252,8 +252,7 @@ def run_enclave_project(client: Client):
             app_pvt_dir = get_app_private_data(client, APP_NAME)
             pvt_proj_dir = app_pvt_dir / folder.name
             pvt_proj_dir.mkdir(parents=True, exist_ok=True)
-            proj_output_dir = output_dir / folder.name
-            proj_output_dir.mkdir(parents=True, exist_ok=True)
+            
 
             dataset_paths: list[Path] = get_dataset_path_from_config(config_file_path)
 
@@ -265,8 +264,10 @@ def run_enclave_project(client: Client):
                 extract_enc_data(client, dataset_path, dec_dataset_path)
                 dec_dataset_paths.append(dec_dataset_path)
 
-            job_env = {"DATA_DIR" : ",".join(dec_dataset_paths),
-                       "OUTPUT_DIR" : proj_output_dir/folder.name,
+            proj_output_dir = output_dir / folder.name
+            proj_output_dir.mkdir(parents=True, exist_ok=True)
+            job_env = {"DATA_DIR" : ",".join([str(path) for path in dec_dataset_paths]),
+                       "OUTPUT_DIR" : proj_output_dir,
             }
             
             cmd = ["python3", code_dir / entrypoint]
