@@ -253,6 +253,7 @@ def run_enclave_project(client: Client):
             pvt_proj_dir = app_pvt_dir / folder.name
             pvt_proj_dir.mkdir(parents=True, exist_ok=True)
             proj_output_dir = output_dir / folder.name
+            proj_output_dir.mkdir(parents=True, exist_ok=True)
 
             dataset_paths: list[Path] = get_dataset_path_from_config(config_file_path)
 
