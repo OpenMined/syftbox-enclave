@@ -154,7 +154,7 @@ if __name__ == "__main__":
 
     init_enclave(client)
     
-    create_key_pair()
+    create_key_pair(client)
 
     while True:
         
