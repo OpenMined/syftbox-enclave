@@ -51,14 +51,25 @@ def init_enclave(client: Client):
         job_folder = job_dir / folder
         job_folder.mkdir(parents=True, exist_ok=True)
 
+def get_public_key_path(client: Client) -> Path:
+    """
+    Returns the public key path of the app
+    """
+    return client.app_data(APP_NAME) / KEYS_DIR / PUBLIC_KEY_FILE
+
+def get_private_key_path(client: Client) -> Path:
+    """
+    Returns the private key path of the app
+    """
+    return get_app_private_data(client, APP_NAME) / KEYS_DIR / PRIVATE_KEY_FILE
 
 def create_key_pair(client: Client):
     """
     Creates a new Public/Private key pair and saves it to a file.
     """
 
-    public_key_path = client.app_data(APP_NAME) / KEYS_DIR / PUBLIC_KEY_FILE
-    private_key_path = client.app_data(APP_NAME) / KEYS_DIR / PRIVATE_KEY_FILE
+    public_key_path = get_public_key_path(client)
+    private_key_path = get_private_key_path(client)
     
     # Step 1:  if keys already exist, return
     if public_key_path.exists() and private_key_path.exists():
