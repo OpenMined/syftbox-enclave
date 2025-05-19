@@ -3,4 +3,4 @@ def hello() -> str:
 
 
 from .orchestra import setup_enclave_server
-from .client import init_session
+from .client import connect

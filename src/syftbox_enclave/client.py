@@ -4,9 +4,14 @@ from syft_core import Client, SyftBoxURL
 from pydantic import BaseModel
 import shutil
 import yaml
+from loguru import logger
 
-def init_session(email: str):
+def connect(email: str):
     client = Client.load()
+
+    enclave_datasite = client.datasites / email
+    if not enclave_datasite.exists():
+        raise ValueError(f"Enclave datasite {enclave_datasite} does not exist.")
 
     return EnclaveClient(email=email, client=client)
     
@@ -14,6 +19,9 @@ def init_session(email: str):
 class EnclaveClient(BaseModel):
     email: str
     client: Client
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
     def create_project(self,
@@ -37,9 +45,9 @@ class EnclaveClient(BaseModel):
         # Handle Data Sources
         data_sources = []
         for dataset in datasets:
-            host = SyftBoxURL(dataset.private_path).host
-            dataset_id = dataset.uid
-            data_sources.append([host,dataset_id])
+            host = SyftBoxURL(dataset.private).host
+            dataset_id_str = str(dataset.uid)
+            data_sources.append([host,dataset_id_str])
 
         # Handle Code Paths
         code_path = Path(code_path)
@@ -63,6 +71,8 @@ class EnclaveClient(BaseModel):
         config_path = enclave_proj_dir / 'config.yaml'
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
+
+        logger.info(f"Project {project_name} created in enclave app path {enclave_app_path}.")
 
 
 
