@@ -39,12 +39,12 @@ def generate_crop_data(num_rows: int, output_path: str):
 
     with open(output_path, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["ID", "Product name", "Quantity", "Price", "Unit"])
+        writer.writerow(["ID", "Product name", "Quantity", "Price ($)", "Unit"])
 
         for crop in selected_crops:
             crop_id = crop_id_map[crop]
             quantity = random.randint(1, 500)
-            price = f"${round(random.uniform(1.0, 10.0) * quantity, 2)}"
+            price = f"{round(random.uniform(1.0, 10.0) * quantity, 2)}"
             writer.writerow([crop_id, crop, quantity, price, unit])
 
     print(f"Crop data with {num_rows} unique crops saved to {output_path}")
