@@ -1,13 +1,18 @@
+import os
 import shutil
+import subprocess
 from time import sleep
 from syft_core import Client
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from loguru import logger
 import yaml
 
 from utils import validate_config_file
+from utils import extract_zip
 
 APP_NAME = "enclave"
 KEYS_DIR = "keys"
@@ -111,9 +116,9 @@ def create_key_pair(client: Client):
         )
     logger.info(f"Public key saved to {public_key_path}")
 
-def verify_data_sources(client: Client, config_file_path: Path) -> bool:
+def get_dataset_path_from_config(config_file_path: Path) -> list:
     """
-    Verifies if all the required files are present in the data sources.
+    Returns the sources from the config file.
     """
     # Load the config file
     with open(config_file_path, "r") as f:
@@ -122,14 +127,35 @@ def verify_data_sources(client: Client, config_file_path: Path) -> bool:
     # Get the data sources from the config file
     data_sources = config_file.get("data", [])
 
-    # Check if all the required files are present
+    dataset_paths = []
+    
     for source in data_sources:
         datasite, dataset_id = source
 
+        enclave_data_folder = client.app_data(APP_NAME, datasite=datasite) / "data"
+        dataset_path = enclave_data_folder / f"{dataset_id}.enc" 
+        
+        dataset_paths.append(dataset_path)
 
+    return dataset_paths
+
+    
+    
+
+def verify_data_sources(client: Client, config_file_path: Path) -> bool:
+    """
+    Verifies if all the required files are present in the data sources.
+    """    
+    dataset_paths: list[Path] = get_dataset_path_from_config(config_file_path)
+
+    # Check if all the required files are present
+    for dataset_path in dataset_paths:
+        if not dataset_path.exists():
+            logger.warning(f"Encrypted Dataset File {dataset_path} not found")
+            return False
+
+    # If all the files are present, return True
     return True
-
-
 
 def launch_enclave_project(client: Client):
     """
@@ -158,6 +184,114 @@ def launch_enclave_project(client: Client):
                 # Move the folder to the running directory
                 shutil.move(folder, running_dir / folder.name)
 
+def decrypt_data(client: Client, enc_file_path: Path):
+    """
+    Decrypts the data files in the given config file.
+    """
+    private_key_path = get_private_key_path(client)
+    # Step 1: Load the private key
+    with open(private_key_path, "rb") as f:
+        private_key = serialization.load_pem_private_key(
+            f.read(),
+            password=None,
+        )
+
+    # Step 2: Read the encrypted file
+    with open(enc_file_path, "rb") as f:
+        key_len = int.from_bytes(f.read(2), "big")
+        encrypted_key = f.read(key_len)
+        nonce = f.read(12)
+        ciphertext = f.read()
+    
+    # Step 3: Decrypt the AES key using private key
+    aes_key = private_key.decrypt(
+        encrypted_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None,
+        ),
+    )
+    
+    # Step 4: Decrypt the ZIP file
+    aesgcm = AESGCM(aes_key)
+    zip_bytes = aesgcm.decrypt(nonce, ciphertext, associated_data=None)
+
+    return zip_bytes
+
+def extract_enc_data(client: Client, enc_file_path: Path, target_dir: Path):
+    zip_bytes = decrypt_data(client, enc_file_path)
+
+    # Extract the zip file to the target directory
+    extract_zip(zip_bytes, target_dir)
+    logger.info(f"Extracted {enc_file_path} to {target_dir}")
+    
+
+def run_enclave_project(client: Client):
+    """
+    Runs the enclave project with the given client.
+    """
+    running_dir = client.app_data(APP_NAME) / "jobs" / "running"
+    done_dir = client.app_data(APP_NAME) / "jobs" / "done"
+    output_dir = client.app_data(APP_NAME) / "jobs" / "outputs"
+    # Iterates through each folder inside the running folder and looks for 
+    # config.yaml file and code directory
+    for folder in running_dir.iterdir():
+        if folder.is_dir():
+            config_file_path = folder / "config.yaml"
+            code_dir = folder / "code"
+            
+            with open(config_file_path, "r") as f:
+                config_file = yaml.safe_load(f)
+
+            entrypoint = config_file.get("code",{}).get("entrypoint")
+            if not entrypoint:
+                logger.warning(f"Entrypoint not found in {config_file_path}")
+                continue
+
+            app_pvt_dir = get_app_private_data(client, APP_NAME)
+            pvt_proj_dir = app_pvt_dir / folder.name
+            pvt_proj_dir.mkdir(parents=True, exist_ok=True)
+            proj_output_dir = output_dir / folder.name
+
+            dataset_paths: list[Path] = get_dataset_path_from_config(config_file_path)
+
+            
+            dec_dataset_paths = [] # Decrypted dataset paths
+            for dataset_path in dataset_paths:
+                # Extract the encrypted data to the private project directory
+                dec_dataset_path = pvt_proj_dir / dataset_path.name
+                extract_enc_data(client, dataset_path, dec_dataset_path)
+                dec_dataset_paths.append(dec_dataset_path)
+
+            job_env = {"DATA_DIR" : ",".join(dec_dataset_paths),
+                       "OUTPUT_DIR" : proj_output_dir/folder.name,
+            }
+            
+            cmd = ["python3", code_dir / entrypoint]
+
+            # Set up environment variables for direct Python execution
+            env = os.environ.copy()
+            env.update(job_env)
+
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env,
+            )
+            # Wait for the process to finish
+            process.wait()
+            # Get the output and error messages
+            output, error = process.communicate()
+            logger.info(f"Output: {output}")
+            logger.error(f"Error: {error}")
+            # Move the folder to the done directory
+            shutil.move(folder, done_dir / folder.name)
+
+
 
 if __name__ == "__main__":
 
@@ -172,6 +306,9 @@ if __name__ == "__main__":
         # Check if the enclave is ready to launch
         launch_enclave_project(client)
 
-        sleep(4)
+        # Run the Enclave Project
+        run_enclave_project(client)
+
+        sleep(3)
     
 
