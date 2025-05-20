@@ -270,23 +270,24 @@ def run_enclave_project(client: Client):
                        "OUTPUT_DIR" : proj_output_dir,
             }
             
-            cmd = ["python3", code_dir / entrypoint]
+            cmd = ["python3", str(code_dir / entrypoint)]
 
             # Set up environment variables for direct Python execution
             env = os.environ.copy()
             env.update(job_env)
 
-
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                env=env,
-            )
-            # Wait for the process to finish
-            process.wait()
-            # TODO: Stream Logs
+            logger.info(f"Running enclave project {folder.name} with command: {cmd}")
+            # Stream logs to execution.log in the project output directory and wait for process to finish
+            log_file_path = folder / "execution.log"
+            with open(log_file_path, "w") as log_file:
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    env=env,
+                )
+                process.wait()
             
             # Move the folder to the done directory
             shutil.move(folder, done_dir / folder.name)
@@ -310,5 +311,5 @@ if __name__ == "__main__":
         run_enclave_project(client)
 
         sleep(3)
-    
+
 

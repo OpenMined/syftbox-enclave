@@ -15,7 +15,7 @@ for dataset_path in dataset_paths:
     if not dataset_path.exists():
         print("Warning: Dataset path does not exist:", dataset_path)
         exit(1)
-    df = pd.read_csv(dataset_path)
+    df = pd.read_csv(dataset_path / "crop_stock_data.csv")
     total_carrots += df[df["Product name"] == "Carrots"]["Quantity"].sum()
     total_tomatoes += df[df["Product name"] == "Tomatoes"]["Quantity"].sum()
 
