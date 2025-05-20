@@ -72,9 +72,30 @@ class EnclaveClient(BaseModel):
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
 
+
         logger.info(f"Project {project_name} created in enclave app path {enclave_app_path}.")
 
+        return EnclaveOutput(client=self.client, email=self.email, project_name=project_name)
 
 
 
+class EnclaveOutput:
 
+    client: Client
+    email: str
+    project_name: str
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def output(self):
+        enclave_app_path = self.client.app_data("enclave", datasite=self.email)
+        enclave_output_dir = enclave_app_path / "jobs" / "outputs" / self.project_name
+        if not enclave_output_dir.exists():
+            logger.info(f"Output not yet available for project {self.project_name}.")
+        
+        logger.info(f"Output available for project {self.project_name} at {enclave_output_dir}.")
+
+    
+
+    
