@@ -116,7 +116,7 @@ def create_key_pair(client: Client):
         )
     logger.info(f"Public key saved to {public_key_path}")
 
-def get_dataset_path_from_config(config_file_path: Path) -> list:
+def get_dataset_path_from_config(client: Client,config_file_path: Path) -> list:
     """
     Returns the sources from the config file.
     """
@@ -133,7 +133,7 @@ def get_dataset_path_from_config(config_file_path: Path) -> list:
         datasite, dataset_id = source
 
         enclave_data_folder = client.app_data(APP_NAME, datasite=datasite) / "data"
-        dataset_path = enclave_data_folder / f"{dataset_id}.enc" 
+        dataset_path = enclave_data_folder / client.email / f"{dataset_id}.enc" 
         
         dataset_paths.append(dataset_path)
 
@@ -146,7 +146,7 @@ def verify_data_sources(client: Client, config_file_path: Path) -> bool:
     """
     Verifies if all the required files are present in the data sources.
     """    
-    dataset_paths: list[Path] = get_dataset_path_from_config(config_file_path)
+    dataset_paths: list[Path] = get_dataset_path_from_config(client,config_file_path)
 
     # Check if all the required files are present
     for dataset_path in dataset_paths:
@@ -254,7 +254,7 @@ def run_enclave_project(client: Client):
             pvt_proj_dir.mkdir(parents=True, exist_ok=True)
             
 
-            dataset_paths: list[Path] = get_dataset_path_from_config(config_file_path)
+            dataset_paths: list[Path] = get_dataset_path_from_config(client,config_file_path)
 
             
             dec_dataset_paths = [] # Decrypted dataset paths

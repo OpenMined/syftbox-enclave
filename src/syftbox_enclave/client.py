@@ -79,7 +79,7 @@ class EnclaveClient(BaseModel):
 
 
 
-class EnclaveOutput:
+class EnclaveOutput(BaseModel):
 
     client: Client
     email: str
@@ -96,6 +96,6 @@ class EnclaveOutput:
         
         logger.info(f"Output available for project {self.project_name} at {enclave_output_dir}.")
 
-    
 
-    
+
+

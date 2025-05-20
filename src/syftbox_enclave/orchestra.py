@@ -71,8 +71,9 @@ def remove_enclave_stack_dir(
 class EnclaveStack:
     """An Enclave stack with a SyftBox client and a Enclave App"""
 
-    def __init__(self, client: SyftBoxClient, **config_kwargs):
+    def __init__(self, client: SyftBoxClient, root_dir: Path, **config_kwargs):
         self.client = client
+        self.root_dir = root_dir
         self._start_enclave_app()
 
     def _start_enclave_app(self):
@@ -86,12 +87,17 @@ class EnclaveStack:
         # to the current process
         env = os.environ.copy()
         env["SYFTBOX_CLIENT_CONFIG_PATH"] = str(self.client.config.path)
+        log_file_path = Path(self.root_dir) / "logs" / f"{self.client.email}_enclave.log"
+        log_file_path.parent.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Enclave log file: {log_file_path}")
+        log_file = open(log_file_path, "a")
         self._enclave_process = subprocess.Popen(
             ["python", str(main_file_path)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=log_file,
+            stderr=log_file,
             env=env
         )
+        self._log_file = log_file
 
     def init_session(self, host, **config_kwargs):
         pass
@@ -100,6 +106,8 @@ class EnclaveStack:
         if hasattr(self, "_enclave_process"):
             self._enclave_process.terminate()
             self._enclave_process.wait()
+            if hasattr(self, "_log_file"):
+                self._log_file.close()
             logger.info("Enclave process terminated.")
         else:
             logger.warning("No enclave process to terminate.")
@@ -162,5 +170,6 @@ def setup_enclave_server(
 
     return EnclaveStack(
         client=client,
+        root_dir=root_dir,
         **config_kwargs,
     )
