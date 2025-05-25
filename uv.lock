@@ -865,7 +865,7 @@ wheels = [
 [[package]]
 name = "syft-rds"
 version = "0.1.1"
-source = { git = "https://github.com/OpenMined/rds.git?rev=rasswanth%2Fadd-enclave-enc#14a918bd777d38cd7f10fff8bc57a749b5a270f0" }
+source = { git = "https://github.com/OpenMined/rds.git?rev=rasswanth%2Fadd-enclave-enc#4a13c507229a5d1e014244b5ffa0369d23cb5a8b" }
 dependencies = [
     { name = "cryptography" },
     { name = "ipython" },
