@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farming Coop</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <h2>Menu</h2>
+            <button id="datasets-btn" class="sidebar-btn">Datasets</button>
+        </aside>
+        <main class="main-content">
+            <h1>Farming Coop</h1>
+            <div id="datasets-list" style="display:none;"></div>
+            <button id="create-dataset-btn" class="green floating-btn" style="display:none;">+ Create Dataset</button>
+            <div id="modal-overlay" class="modal-overlay" style="display:none;">
+                <div class="modal flow-ui">
+                    <span class="close" id="close-modal">&times;</span>
+                    <form id="create-dataset-form" enctype="multipart/form-data">
+                        <h2>Create Dataset</h2>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" name="name" required placeholder="Enter dataset name">
+                        </div>
+                        <div class="form-group">
+                            <label>Summary</label>
+                            <input type="text" name="summary" required placeholder="Short summary">
+                        </div>
+                        <div class="form-group">
+                            <label>Private Path</label>
+                            <input type="file" name="private_path" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mock Path</label>
+                            <input type="file" name="mock_path" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Auto Approval</label>
+                            <input type="text" name="auto_approval" required placeholder="yes/no">
+                        </div>
+                        <button type="submit" class="green">Submit</button>
+                        <span id="success-tick" style="display:none; color:green; font-size:2em;">&#10003;</span>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        const datasetsBtn = document.getElementById('datasets-btn');
+        const createBtn = document.getElementById('create-dataset-btn');
+        const datasetsList = document.getElementById('datasets-list');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const closeModal = document.getElementById('close-modal');
+        const createForm = document.getElementById('create-dataset-form');
+        const successTick = document.getElementById('success-tick');
+
+        datasetsBtn.onclick = async function() {
+            datasetsList.style.display = 'block';
+            createBtn.style.display = 'inline-block';
+            const resp = await fetch('/datasets');
+            const data = await resp.json();
+            let html = '<h2>Datasets</h2><ul>';
+            for (const ds of data.datasets) {
+                html += `<li><b>${ds.name}</b>: ${ds.summary} (Auto Approval: ${ds.auto_approval})</li>`;
+            }
+            html += '</ul>';
+            datasetsList.innerHTML = html;
+        };
+
+        createBtn.onclick = function() {
+            modalOverlay.style.display = 'flex';
+            successTick.style.display = 'none';
+            createForm.reset();
+        };
+        closeModal.onclick = function() {
+            modalOverlay.style.display = 'none';
+        };
+        window.onclick = function(event) {
+            if (event.target === modalOverlay) {
+                modalOverlay.style.display = 'none';
+            }
+        };
+        createForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const formData = new FormData(createForm);
+            const resp = await fetch('/create-dataset', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await resp.json();
+            if (result.success) {
+                successTick.style.display = 'inline';
+                setTimeout(() => {
+                    successTick.style.display = 'none';
+                    modalOverlay.style.display = 'none';
+                    datasetsBtn.click();
+                }, 1200);
+            }
+        };
+        // Hide create button by default
+        createBtn.style.display = 'none';
+    </script>
+</body>
+</html>
