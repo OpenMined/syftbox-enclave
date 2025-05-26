@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div id="success-overlay-bg" style="display:none;"></div>
     <div class="container">
         <aside class="sidebar">
             <h2>Menu</h2>
@@ -49,17 +50,17 @@
                             <input type="text" name="auto_approval" required placeholder="yes/no">
                         </div>
                         <button type="submit" class="green">Submit</button>
-                        <div id="success-message" class="fade-message success-message" style="display:none;">
-                            <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2705.png" alt="Success" style="width:2em;vertical-align:middle;"> <span id="success-text"></span>
-                        </div>
-                        <div id="error-message" class="fade-message error-message" style="display:none;">
-                            <span id="error-text"></span>
-                            <button type="button" id="close-error" style="margin-left:1em;">Close</button>
-                        </div>
                     </form>
                 </div>
             </div>
         </main>
+    </div>
+    <div id="success-message" class="fade-message success-message overlay-success-wide" style="display:none;">
+        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2705.png" alt="Success" style="width:2.5em;vertical-align:middle;"> <span id="success-text"></span>
+    </div>
+    <div id="error-message" class="fade-message error-message" style="display:none;">
+        <span id="error-text"></span>
+        <button type="button" id="close-error" style="margin-left:1em;">Close</button>
     </div>
     <script>
         const datasetsBtn = document.getElementById('datasets-btn');
@@ -100,9 +101,18 @@
         };
 
         createBtn.onclick = function() {
-            modalOverlay.style.display = 'flex';
-            successTick.style.display = 'none';
+            // Hide any previous messages
+            if (typeof successMsg !== 'undefined') successMsg.style.display = 'none';
+            if (typeof errorMsg !== 'undefined') errorMsg.style.display = 'none';
+            // Reset the form
             createForm.reset();
+            // Clear file input values by replacing them with clones
+            const fileInputs = createForm.querySelectorAll('input[type="file"]');
+            fileInputs.forEach(input => {
+                const clone = input.cloneNode(true);
+                input.parentNode.replaceChild(clone, input);
+            });
+            modalOverlay.style.display = 'flex';
         };
         closeModal.onclick = function() {
             modalOverlay.style.display = 'none';
@@ -124,21 +134,27 @@
             const errorMsg = document.getElementById('error-message');
             const successText = document.getElementById('success-text');
             const errorText = document.getElementById('error-text');
+            const overlayBg = document.getElementById('success-overlay-bg');
             if (resp.ok && result.message) {
                 errorMsg.style.display = 'none';
                 successText.textContent = result.message;
-                successMsg.style.display = 'block';
+                modalOverlay.style.display = 'none'; // Close the dialog immediately
+                overlayBg.style.display = 'block';
+                successMsg.style.display = 'flex';
+                successMsg.style.opacity = 1;
+                // Bring overlay and message to front
+                overlayBg.style.zIndex = 1999;
+                successMsg.style.zIndex = 2000;
                 setTimeout(() => {
-                    successMsg.style.opacity = 1;
                     successMsg.style.transition = 'opacity 0.7s';
                     successMsg.style.opacity = 0;
-                }, 3200); // 2 seconds longer than before (1200 + 2000)
+                }, 3200);
                 setTimeout(() => {
                     successMsg.style.display = 'none';
-                    modalOverlay.style.display = 'none';
+                    overlayBg.style.display = 'none';
                     datasetsBtn.click();
                     successMsg.style.opacity = 1;
-                }, 3800); // 2 seconds longer than before (1800 + 2000)
+                }, 3800);
             } else {
                 successMsg.style.display = 'none';
                 errorText.textContent = result.error || 'Unknown error';
@@ -188,6 +204,69 @@
             background: #fdeaea;
             color: #c0392b;
             border: 1.5px solid #e74c3c;
+        }
+        #success-overlay-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255,255,255,0.4);
+            z-index: 1999;
+            display: block;
+            pointer-events: auto;
+        }
+        .overlay-success {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            min-width: 320px;
+            min-height: 80px;
+            box-shadow: 0 4px 32px rgba(39,174,96,0.18);
+            font-size: 1.3em;
+            background: rgba(255,255,255,0.97);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .overlay-success-wide {
+            position: fixed;
+            top: 15vh;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            min-width: 420px;
+            min-height: 80px;
+            max-width: 80vw;
+            width: 60vw;
+            box-shadow: 0 4px 32px rgba(39,174,96,0.18);
+            font-size: 1.3em;
+            background: rgba(255,255,255,0.97);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: 2px solid #27ae60;
+            pointer-events: auto;
+        }
+        @media (max-width: 600px) {
+            .overlay-success-wide {
+                min-width: 90vw;
+                width: 95vw;
+                font-size: 1em;
+            }
+        }
+        #modal-overlay {
+            position: fixed;
+            /* ...existing code... */
+            overflow: visible;
+        }
+        #modal-overlay .modal {
+            position: relative;
         }
     </style>
 </body>

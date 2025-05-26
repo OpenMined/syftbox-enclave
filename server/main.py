@@ -99,7 +99,7 @@ def create_dataset(
             auto_approval=[auto_approval]
         )
         logger.info(f"Dataset created: {dataset}")
-        return JSONResponse(status_code=201, content={"message": f"Dataset created successfully: {dataset.uid}"})
+        return JSONResponse(status_code=201, content={"message": f"Dataset created successfully: {dataset.name}"})
     except Exception as e:
         logger.error(f"Error creating dataset: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
