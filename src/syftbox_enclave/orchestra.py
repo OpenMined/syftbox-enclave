@@ -77,7 +77,7 @@ class EnclaveStack:
         self._start_enclave_app()
 
     def _start_enclave_app(self):
-        main_file_path = Path(__file__).parent.parent.parent / "main.py"
+        main_file_path = Path(__file__).parent.parent.parent / "app" / "main.py"
 
         if not main_file_path.exists():
             raise FileNotFoundError(
