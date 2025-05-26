@@ -22,6 +22,7 @@ _nc := '\033[0m'
 # Aliases
 
 alias rj := run-jupyter
+alias rs := run-server
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -37,3 +38,18 @@ run-jupyter jupyter_args="":
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+
+
+[group('server')]
+run-server config_path="":
+    #!/bin/bash
+    set -euo pipefail
+
+    # if the config_path is not empty string,set syftbox client config path
+    if [ "{{config_path}}" != "" ]; then
+        echo "${_green}Using custom config path: ${config_path}${_nc}"
+        export SYFTBOX_CLIENT_CONFIG_PATH="${config_path}"
+    fi
+    
+    uv run  \
+        uvicorn server.main:app --reload
