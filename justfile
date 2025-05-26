@@ -53,3 +53,21 @@ run-server config_path="":
     
     uv run  \
         uvicorn server.main:app --reload
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Build syftbox enclave wheel
+[group('build')]
+build:
+    rm -rf dist
+    uv build .
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Publish Syftbox wheel to pypi
+[group('publish')]
+publish-pypi: (build)
+    #!/bin/bash
+    echo "{{ _cyan }}Publishing to pypi...{{ _nc }}"
+    uvx twine upload ./dist/*
+    echo "{{ _green }}Done!{{ _nc }}"

@@ -26,3 +26,13 @@ dev = [
 
 [tool.uv.sources]
 syft-rds = { git = "https://github.com/OpenMined/rds.git", rev = "rasswanth/add-enclave-enc" }
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/syftbox_enclave"]
+only-include = ["src"]
+exclude = ["src/**/__pycache__"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "pyproject.toml", "/README.md"]
+exclude = ["src/**/__pycache__"]
