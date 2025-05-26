@@ -202,6 +202,32 @@ button:hover {
     margin-top: 1.2em;
     font-size: 2.2em;
 }
+.dataset-table tr {
+    height: 2.8em;
+}
+.dataset-table td {
+    padding-top: 1.2em;
+    padding-bottom: 1.2em;
+}
+.dataset-table tr:not(:last-child) {
+    border-bottom: 1.8em solid transparent;
+}
+.dataset-table td.private-col, .dataset-table td.mock-col {
+    max-width: none;
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    overflow: visible;
+    text-overflow: unset;
+}
+.dataset-table th.private-col, .dataset-table th.mock-col {
+    max-width: none;
+}
+.dataset-table th, .dataset-table td {
+    padding: 0.8em 2.2em; /* Increase horizontal padding for more column spacing */
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left;
+}
 @media (max-width: 600px) {
     .modal.flow-ui {
         min-width: 90vw;

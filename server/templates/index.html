@@ -41,11 +41,21 @@
                             <input type="file" name="mock_path" required>
                         </div>
                         <div class="form-group">
+                            <label>Description Path</label>
+                            <input type="file" name="description_path" required>
+                        </div>
+                        <div class="form-group">
                             <label>Auto Approval</label>
                             <input type="text" name="auto_approval" required placeholder="yes/no">
                         </div>
                         <button type="submit" class="green">Submit</button>
-                        <span id="success-tick" style="display:none; color:green; font-size:2em;">&#10003;</span>
+                        <div id="success-message" class="fade-message success-message" style="display:none;">
+                            <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2705.png" alt="Success" style="width:2em;vertical-align:middle;"> <span id="success-text"></span>
+                        </div>
+                        <div id="error-message" class="fade-message error-message" style="display:none;">
+                            <span id="error-text"></span>
+                            <button type="button" id="close-error" style="margin-left:1em;">Close</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -73,13 +83,15 @@
             const columns = ["uid", "name", "private", "mock", "summary", "auto_approval"];
             let html = '<h2>Datasets</h2><div class="table-container"><table class="dataset-table"><thead><tr>';
             for (const col of columns) {
-                html += `<th>${col}</th>`;
+                let thClass = (col === 'private' || col === 'mock') ? `${col}-col` : '';
+                html += `<th class="${thClass}">${col}</th>`;
             }
             html += '</tr></thead><tbody>';
             for (const ds of data.datasets) {
                 html += '<tr>';
                 for (const col of columns) {
-                    html += `<td>${ds[col] !== undefined ? ds[col] : ''}</td>`;
+                    let tdClass = (col === 'private' || col === 'mock') ? `${col}-col` : '';
+                    html += `<td class="${tdClass}">${ds[col] !== undefined ? ds[col] : ''}</td>`;
                 }
                 html += '</tr>';
             }
@@ -108,17 +120,75 @@
                 body: formData
             });
             const result = await resp.json();
-            if (result.success) {
-                successTick.style.display = 'inline';
+            const successMsg = document.getElementById('success-message');
+            const errorMsg = document.getElementById('error-message');
+            const successText = document.getElementById('success-text');
+            const errorText = document.getElementById('error-text');
+            if (resp.ok && result.message) {
+                errorMsg.style.display = 'none';
+                successText.textContent = result.message;
+                successMsg.style.display = 'block';
                 setTimeout(() => {
-                    successTick.style.display = 'none';
+                    successMsg.style.opacity = 1;
+                    successMsg.style.transition = 'opacity 0.7s';
+                    successMsg.style.opacity = 0;
+                }, 3200); // 2 seconds longer than before (1200 + 2000)
+                setTimeout(() => {
+                    successMsg.style.display = 'none';
                     modalOverlay.style.display = 'none';
                     datasetsBtn.click();
-                }, 1200);
+                    successMsg.style.opacity = 1;
+                }, 3800); // 2 seconds longer than before (1800 + 2000)
+            } else {
+                successMsg.style.display = 'none';
+                errorText.textContent = result.error || 'Unknown error';
+                errorMsg.style.display = 'block';
             }
+        };
+        document.getElementById('close-error').onclick = function() {
+            document.getElementById('error-message').style.display = 'none';
         };
         // Hide create button by default
         createBtn.style.display = 'none';
+        // Update the file input elements for private_path and mock_path to allow folder selection
+        // This must be done after the DOM loads
+        window.addEventListener('DOMContentLoaded', () => {
+            const privateInput = document.querySelector('input[name="private_path"]');
+            const mockInput = document.querySelector('input[name="mock_path"]');
+            if (privateInput) {
+                privateInput.setAttribute('webkitdirectory', '');
+                privateInput.setAttribute('directory', '');
+                privateInput.removeAttribute('multiple'); // Let browser handle multiple files if folder
+            }
+            if (mockInput) {
+                mockInput.setAttribute('webkitdirectory', '');
+                mockInput.setAttribute('directory', '');
+                mockInput.removeAttribute('multiple');
+            }
+        });
     </script>
+    <style>
+        .fade-message {
+            margin-top: 1em;
+            padding: 1em 1.5em;
+            border-radius: 8px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.7s;
+        }
+        .success-message {
+            background: #eafbe7;
+            color: #219150;
+            border: 1.5px solid #27ae60;
+        }
+        .error-message {
+            background: #fdeaea;
+            color: #c0392b;
+            border: 1.5px solid #e74c3c;
+        }
+    </style>
 </body>
 </html>
