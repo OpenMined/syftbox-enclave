@@ -3,7 +3,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
-from typing import List
+from syft_core import Client
+from syft_rds import init_session
 
 app = FastAPI(title="Farming Coop Web Server")
 
@@ -20,9 +21,14 @@ datasets = [
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+client = Client.load()
+
 @app.get("/datasets", response_class=JSONResponse)
 def list_datasets():
-    return {"datasets": datasets}
+    datasite_client = init_session(client.email)
+    datasets = datasite_client.dataset.get_all()
+    # Convert Pydantic objects to dicts for JSON serialization
+    return {"datasets": [ds.model_dump() for ds in datasets]}
 
 @app.post("/create-dataset", response_class=JSONResponse)
 def create_dataset(
