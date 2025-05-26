@@ -17,10 +17,6 @@ BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-datasets = [
-    {"name": "Crop Data 2024", "summary": "Yield and weather data", "auto_approval": "yes"},
-    {"name": "Soil Quality", "summary": "Soil pH and nutrients", "auto_approval": "no"}
-]
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
@@ -34,6 +30,13 @@ def list_datasets():
     datasets = datasite_client.dataset.get_all()
     # Convert Pydantic objects to dicts for JSON serialization
     return {"datasets": [ds.model_dump() for ds in datasets]}
+
+@app.get("/jobs", response_class=JSONResponse)
+def list_jobs():
+    datasite_client = init_session(client.email)
+    jobs = datasite_client.jobs.get_all()
+    # Convert Pydantic objects to dicts for JSON serialization
+    return {"jobs": [job.model_dump() for job in jobs]}
 
 def save_uploads_to_temp(upload, allow_multiple=False):
     """

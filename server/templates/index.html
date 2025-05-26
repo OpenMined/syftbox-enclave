@@ -12,14 +12,21 @@
         <aside class="sidebar">
             <h2>Menu</h2>
             <button id="datasets-btn" class="sidebar-btn">Datasets</button>
+            <button id="jobs-btn" class="sidebar-btn">Jobs</button>
         </aside>
         <main class="main-content">
-            <h1>Farming Coop</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>Farming Coop</h1>
+                <a href="https://openmined.org" target="_blank" style="display:inline-block; margin-left:auto;">
+                    <img src="https://openmined.org/wp-content/uploads/2024/11/logo-1@2x.png" alt="OpenMined Logo" style="height:48px; width:auto; vertical-align:middle; background: white; border-radius: 8px; padding: 2px;">
+                </a>
+            </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div></div>
                 <button id="create-dataset-btn" class="green floating-btn" style="display:none; margin-bottom: 1em;">+ Create Dataset</button>
             </div>
             <div id="datasets-list" style="display:none;"></div>
+            <div id="jobs-list" style="display:none;"></div>
             <div id="modal-overlay" class="modal-overlay" style="display:none;">
                 <div class="modal flow-ui">
                     <span class="close" id="close-modal">&times;</span>
@@ -64,14 +71,45 @@
     </div>
     <script>
         const datasetsBtn = document.getElementById('datasets-btn');
+        const jobsBtn = document.getElementById('jobs-btn');
         const createBtn = document.getElementById('create-dataset-btn');
         const datasetsList = document.getElementById('datasets-list');
+        const jobsList = document.getElementById('jobs-list');
         const modalOverlay = document.getElementById('modal-overlay');
         const closeModal = document.getElementById('close-modal');
         const createForm = document.getElementById('create-dataset-form');
         const successTick = document.getElementById('success-tick');
 
+        jobsBtn.onclick = async function() {
+            datasetsList.style.display = 'none';
+            jobsList.style.display = 'block';
+            createBtn.style.display = 'none';
+            const resp = await fetch('/jobs');
+            const data = await resp.json();
+            if (!data.jobs || data.jobs.length === 0) {
+                jobsList.innerHTML = '<h2>Jobs</h2><p>No jobs found.</p>';
+                return;
+            }
+            // Dynamically get columns from first job, or use a default set
+            const columns = Object.keys(data.jobs[0] || {});
+            let html = '<h2>Jobs</h2><div class="table-container"><table class="dataset-table"><thead><tr>';
+            for (const col of columns) {
+                html += `<th>${col}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            for (const job of data.jobs) {
+                html += '<tr>';
+                for (const col of columns) {
+                    html += `<td>${job[col] !== undefined ? job[col] : ''}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table></div>';
+            jobsList.innerHTML = html;
+        };
+
         datasetsBtn.onclick = async function() {
+            jobsList.style.display = 'none';
             datasetsList.style.display = 'block';
             createBtn.style.display = 'inline-block';
             const resp = await fetch('/datasets');
@@ -166,6 +204,8 @@
         };
         // Hide create button by default
         createBtn.style.display = 'none';
+        // Hide jobs list by default
+        jobsList.style.display = 'none';
         // Update the file input elements for private_path and mock_path to allow folder selection
         // This must be done after the DOM loads
         window.addEventListener('DOMContentLoaded', () => {
