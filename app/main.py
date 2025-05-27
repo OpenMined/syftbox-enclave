@@ -13,6 +13,7 @@ import yaml
 
 from utils import validate_config_file
 from utils import extract_zip
+from permissions import add_permission_rule
 
 APP_NAME = "enclave"
 KEYS_DIR = "keys"
@@ -55,6 +56,16 @@ def init_enclave(client: Client):
     for folder in ["launch", "running", "done", "outputs"]:
         job_folder = job_dir / folder
         job_folder.mkdir(parents=True, exist_ok=True)
+        if folder == "launch":
+            # Add permission rules for the launch folder
+            # Currently allow public read and write access
+            add_permission_rule(
+                job_folder,
+                '**',
+                read=['*'],
+                write=['*'],
+            )
+
 
 def get_public_key_path(client: Client) -> Path:
     """
@@ -84,6 +95,14 @@ def create_key_pair(client: Client):
     # Step 2: Create new key pair
     public_key_path.parent.mkdir(parents=True, exist_ok=True)
     private_key_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Step 2.1: Allow public read access to the public key
+    add_permission_rule(
+        public_key_path.parent,
+        '**',
+        read=['*'],
+        write=[],
+    )
     
 
     # Generate private key
@@ -266,6 +285,14 @@ def run_enclave_project(client: Client):
 
             proj_output_dir = output_dir / folder.name
             proj_output_dir.mkdir(parents=True, exist_ok=True)
+            output_owners = config_file.get("output",[])
+            # Add permission rules for the output directory
+            add_permission_rule(
+                proj_output_dir,
+                '**',
+                read=output_owners,
+                write=[],
+            )
             job_env = {"DATA_DIR" : ",".join([str(path) for path in dec_dataset_paths]),
                        "OUTPUT_DIR" : proj_output_dir,
             }
