@@ -101,17 +101,19 @@ class EnclaveOutput(BaseModel):
         output_dir = self.output_dir
 
         if block:
-            logger.info(f"Waiting for output for project {self.project_name}...")
+            logger.info(f"Waiting for output for project {self.project_name}...", end="")
             while not output_dir.exists():
+                print(".", end="", flush=True)
                 time.sleep(2)
+            print()  # Newline after waiting
             logger.info(f"Output available for project {self.project_name} ✅"
-                            +f"\n Directory: {output_dir}.")
+                        + f"\n Directory: {output_dir}.")
             open_path_in_explorer(output_dir)
             return output_dir
         else:
             if output_dir.exists():
                 logger.info(f"Output available for project {self.project_name}"
-                            +f"\n Directory: {output_dir}. ✅")
+                            + f"\n Directory: {output_dir}. ✅")
                 open_path_in_explorer(output_dir)
                 return output_dir
             else:
