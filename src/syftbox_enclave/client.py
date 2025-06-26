@@ -1,10 +1,13 @@
 from pathlib import Path
+import time
 from typing import Any
 from syft_core import Client, SyftBoxURL
 from pydantic import BaseModel
 import shutil
 import yaml
 from loguru import logger
+
+from .utils import open_path_in_explorer
 
 def connect(email: str):
     client = Client.load()
@@ -88,13 +91,31 @@ class EnclaveOutput(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    def output(self):
+    
+    @property
+    def output_dir(self) -> Path:
         enclave_app_path = self.client.app_data("enclave", datasite=self.email)
-        enclave_output_dir = enclave_app_path / "jobs" / "outputs" / self.project_name
-        if not enclave_output_dir.exists():
-            logger.info(f"Output not yet available for project {self.project_name}.")
-        
-        logger.info(f"Output available for project {self.project_name} at {enclave_output_dir}.")
+        return enclave_app_path / "jobs" / "outputs" / self.project_name
+
+    def output(self, block: bool = False):
+        output_dir = self.output_dir
+
+        if block:
+            logger.info(f"Waiting for output for project {self.project_name}...")
+            while not output_dir.exists():
+                time.sleep(2)
+            logger.info(f"Output available for project {self.project_name} ✅"
+                            +f"\n Directory: {output_dir}.")
+            open_path_in_explorer(output_dir)
+            return output_dir
+        else:
+            if output_dir.exists():
+                logger.info(f"Output available for project {self.project_name}"
+                            +f"\n Directory: {output_dir}. ✅")
+                open_path_in_explorer(output_dir)
+                return output_dir
+            else:
+                logger.info(f"Output not yet available for project {self.project_name}. 🟠")
 
 
 
