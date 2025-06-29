@@ -172,3 +172,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# VS Code
+.DS_Store
+
+# Syft specific
+datasets/
