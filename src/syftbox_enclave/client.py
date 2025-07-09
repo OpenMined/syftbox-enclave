@@ -196,9 +196,7 @@ class EnclaveProject(BaseModel):
 
         if not metrics:
             if self.output_dir.exists():
-                logger.info(f"Output already available for project {self.project_name} ✅"
-                            + f"\n Directory: {self.output_dir}.")
-                open_path_in_explorer(self.output_dir)
+                logger.info(f"Output already available for project {self.project_name} ✅")
             else:
                 logger.warning("Metrics not found and output is not available.")
             return "No metrics to display."
