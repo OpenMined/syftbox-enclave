@@ -5,7 +5,10 @@ description = "SyftBox Enclave provides an interface for Enclave Deployments in 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "ipywidgets>=8.1.7",
     "loguru>=0.7.3",
+    "matplotlib>=3.10.3",
+    "pandas>=2.2.3",
     "pydantic>=2.11.5",
     "rich>=14.0.0",
     "syft-core>=0.2.3",
