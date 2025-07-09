@@ -14,6 +14,7 @@ import yaml
 from utils import validate_config_file
 from utils import extract_zip
 from permissions import add_permission_rule
+from models import DatasetStatus
 
 APP_NAME = "enclave"
 KEYS_DIR = "keys"
@@ -156,25 +157,42 @@ def get_dataset_path_from_config(client: Client,config_file_path: Path) -> list:
         
         dataset_paths.append(dataset_path)
 
-    return dataset_paths
+    return dataset_paths, data_sources
 
     
     
 
-def verify_data_sources(client: Client, config_file_path: Path) -> bool:
+def verify_data_sources(client: Client, config_file_path: Path, launch_dir: Path) -> bool:
     """
-    Verifies if all the required files are present in the data sources.
-    """    
-    dataset_paths: list[Path] = get_dataset_path_from_config(client,config_file_path)
+    Verifies if all the required files are present in the data sources and updates metrics.yaml accordingly.
+    """
+    dataset_paths, data_sources = get_dataset_path_from_config(client, config_file_path)
+    metrics_file_path = config_file_path.parent / "metrics.yaml"
 
-    # Check if all the required files are present
-    for dataset_path in dataset_paths:
-        if not dataset_path.exists():
-            logger.warning(f"Encrypted Dataset File {dataset_path} not found")
-            return False
+    # Load existing metrics
+    if metrics_file_path.exists():
+        with open(metrics_file_path, 'r') as f:
+            metrics = yaml.safe_load(f) or {}
+    else:
+        metrics = {}
 
-    # If all the files are present, return True
-    return True
+    all_found = True
+    for dataset_path, data_source in zip(dataset_paths, data_sources):
+        datasite, dataset_id = data_source
+        dataset_id_str = str(dataset_id)
+        if dataset_path.exists():
+            metrics.setdefault(dataset_id_str, {})
+            metrics[dataset_id_str]["datasite"] = datasite
+            metrics[dataset_id_str]["status"] = DatasetStatus.SUCCESS.value
+        else:
+            logger.warning(f"Encrypted Dataset File {dataset_path} not found for datasite {datasite}")
+            all_found = False
+
+    # Write back updated metrics
+    with open(metrics_file_path, 'w') as f:
+        yaml.dump(metrics, f)
+
+    return all_found
 
 def launch_enclave_project(client: Client):
     """
@@ -195,7 +213,7 @@ def launch_enclave_project(client: Client):
             validate_config_file(config_file_path)
 
             # Check if all the required files are sent by the datasites
-            verify_sources = verify_data_sources(client, config_file_path)
+            verify_sources = verify_data_sources(client, config_file_path, launch_dir)
 
             # if all the files are present, move the folder to the running directory
             if verify_sources:
@@ -273,7 +291,7 @@ def run_enclave_project(client: Client):
             pvt_proj_dir.mkdir(parents=True, exist_ok=True)
             
 
-            dataset_paths: list[Path] = get_dataset_path_from_config(client,config_file_path)
+            dataset_paths, _ = get_dataset_path_from_config(client,config_file_path)
 
             
             dec_dataset_paths = [] # Decrypted dataset paths

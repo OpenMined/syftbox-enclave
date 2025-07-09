@@ -952,6 +952,7 @@ source = { editable = "." }
 dependencies = [
     { name = "loguru" },
     { name = "pydantic" },
+    { name = "rich" },
     { name = "syft-core" },
 ]
 
@@ -969,6 +970,7 @@ dev = [
 requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.11.5" },
+    { name = "rich", specifier = ">=14.0.0" },
     { name = "syft-core", specifier = ">=0.2.3" },
 ]
 

@@ -1,11 +1,20 @@
 from pathlib import Path
 import time
 from typing import Any
-from syft_core import Client, SyftBoxURL
-from pydantic import BaseModel
 import shutil
 import yaml
+from enum import Enum
+
+from syft_core import Client, SyftBoxURL
+from pydantic import BaseModel
+from rich.console import Console
+from rich.table import Table
+from rich.live import Live
+from rich.panel import Panel
+from rich.progress import SpinnerColumn, TextColumn
+from rich.console import Group
 from loguru import logger
+
 
 from .utils import open_path_in_explorer
 
@@ -18,6 +27,10 @@ def connect(email: str):
 
     return EnclaveClient(email=email, client=client)
     
+class DatasetStatus(Enum):
+    PENDING = "pending"
+    SUCCESS = "success"
+    ERROR = "error"
 
 class EnclaveClient(BaseModel):
     email: str
@@ -47,10 +60,15 @@ class EnclaveClient(BaseModel):
         
         # Handle Data Sources
         data_sources = []
+        metrics = {}
         for dataset in datasets:
             host = SyftBoxURL(dataset.private).host
             dataset_id_str = str(dataset.uid)
             data_sources.append([host,dataset_id_str])
+            metrics[dataset_id_str] = {
+                "datasite" : host, 
+                "status": DatasetStatus.PENDING.value,
+            }
 
         # Handle Code Paths
         code_path = Path(code_path)
@@ -74,15 +92,18 @@ class EnclaveClient(BaseModel):
         config_path = enclave_proj_dir / 'config.yaml'
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
-
+        
+        metrics_path = enclave_proj_dir / 'metrics.yaml'
+        with open(metrics_path, 'w') as f:
+            yaml.dump(metrics, f)
 
         logger.info(f"Project {project_name} created in enclave app path {enclave_app_path}.")
 
-        return EnclaveOutput(client=self.client, email=self.email, project_name=project_name)
+        return EnclaveProject(client=self.client, email=self.email, project_name=project_name)
 
 
 
-class EnclaveOutput(BaseModel):
+class EnclaveProject(BaseModel):
 
     client: Client
     email: str
@@ -96,6 +117,85 @@ class EnclaveOutput(BaseModel):
     def output_dir(self) -> Path:
         enclave_app_path = self.client.app_data("enclave", datasite=self.email)
         return enclave_app_path / "jobs" / "outputs" / self.project_name
+    
+    @property
+    def _metrics_path(self) -> Path:
+        enclave_app_path = self.client.app_data("enclave", datasite=self.email)
+        enclave_proj_dir = enclave_app_path / "jobs" / "launch" / self.project_name
+        return enclave_proj_dir / 'metrics.yaml'
+
+    def _get_metrics(self):
+        metrics_path = self._metrics_path
+        if not metrics_path.exists():
+            logger.warning(f"Metrics file does not exist for "
+                           + "\n project: {self.project_name}."
+                           + "\n The project might have completed "
+                           + "\n Kindly call .output() to check if the output is available.")
+            return None
+        with open(metrics_path, 'r') as f:
+            return yaml.safe_load(f)
+
+    def _render_table(self, metrics):
+        table = Table()
+        table.add_column("Dataset ID", style="cyan", no_wrap=True)
+        table.add_column("Host", style="magenta")
+        table.add_column("Status", style="bold")
+
+        STATUS_EMOJI = {
+            DatasetStatus.PENDING.value: '🟠',
+            DatasetStatus.SUCCESS.value: '✅',
+            DatasetStatus.ERROR.value: '❌',
+        }
+
+        for dataset_id, info in metrics.items():
+            host = info.get('datasite', '-')
+            status = info.get('status', '-')
+            emoji = STATUS_EMOJI.get(status, '')
+            table.add_row(dataset_id, host, f"{status} {emoji}".strip())
+        
+        return Group(
+            Panel(f"[bold]Project:[/] {self.project_name}", border_style="blue"),
+            table
+        )
+
+    def _all_success(self, metrics):
+        return all(info.get('status') == DatasetStatus.SUCCESS.value for info in metrics.values())
+
+    def status(self, block: bool = False) -> str:
+        console = Console()
+        metrics = self._get_metrics()
+
+        if not metrics:
+            if self.output_dir.exists():
+                logger.info(f"Output already available for project {self.project_name} ✅"
+                            + f"\n Directory: {self.output_dir}.")
+                open_path_in_explorer(self.output_dir)
+            else:
+                logger.warning("Metrics not found and output is not available.")
+            return "No metrics to display."
+
+        if not block:
+            console.print(self._render_table(metrics))
+            return "Status displayed."
+
+        try:
+            with Live(self._render_table(metrics), console=console, screen=True, vertical_overflow="visible") as live:
+                while not self._all_success(metrics):
+                    time.sleep(2)
+                    metrics = self._get_metrics()
+                    if not metrics:
+                        # This can happen if the job finishes and metrics.yaml is deleted.
+                        break
+                    live.update(self._render_table(metrics))
+            
+            console.print(f"\n[bold green]All datasets have uploaded to the Enclave! ✅[/bold green]")
+
+        except KeyboardInterrupt:
+            console.print("\nStatus monitoring interrupted.", style="bold yellow")
+            return "Interrupted."
+        
+        return "All success."
+        
 
     def output(self, block: bool = False):
         output_dir = self.output_dir
