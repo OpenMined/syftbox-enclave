@@ -317,7 +317,18 @@ def run_enclave_project(client: Client):
                 process.wait()
             
             # Move the folder to the done directory
-            shutil.move(folder, done_dir / folder.name)
+            project_done_dir = done_dir / folder.name
+            project_done_dir.mkdir(parents=True, exist_ok=True)
+            # Add permission rules for the done directory
+            add_permission_rule(
+                project_done_dir,
+                '**',
+                read=output_owners,
+                write=[],
+            )
+            # Move the folder to the done directory
+            logger.info(f"Moving {folder} to done directory")
+            shutil.move(folder, project_done_dir)
 
 
 
