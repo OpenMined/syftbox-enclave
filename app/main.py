@@ -194,6 +194,9 @@ def verify_data_sources(client: Client, config_file_path: Path, launch_dir: Path
 
     return all_found
 
+def _any_success(metrics):
+    return any(info.get('status') == DatasetStatus.SUCCESS.value for info in metrics.values())
+
 def launch_enclave_project(client: Client):
     """
     Launches the enclave project with the given client.
@@ -215,6 +218,19 @@ def launch_enclave_project(client: Client):
             # Check if all the required files are sent by the datasites
             verify_sources = verify_data_sources(client, config_file_path, launch_dir)
 
+            # force start check
+            # Checks if the force_start.ext file is present in the launch folder
+            force_start_file = folder / "force_start.ext"
+            if force_start_file.exists():
+                # Open the metrics file to check if any dataset has succeeded
+                metrics_file_path = folder / "metrics.yaml"
+                if metrics_file_path.exists():
+                    with open(metrics_file_path, 'r') as f:
+                        metrics = yaml.safe_load(f) or {}
+                    if _any_success(metrics):
+                        logger.info(f"Force start file found in {folder}. Skipping data source verification.")        
+                        verify_sources = True
+                
             # if all the files are present, move the folder to the running directory
             if verify_sources:
                 logger.info(f"Moving {folder} to running directory")
@@ -296,6 +312,9 @@ def run_enclave_project(client: Client):
             
             dec_dataset_paths = [] # Decrypted dataset paths
             for dataset_path in dataset_paths:
+                if not dataset_path.exists():
+                    logger.warning(f"Ignoring missing dataset path: {dataset_path}")
+                    continue
                 # Extract the encrypted data to the private project directory
                 dec_dataset_path = pvt_proj_dir / dataset_path.name
                 extract_enc_data(client, dataset_path, dec_dataset_path)

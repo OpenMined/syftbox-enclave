@@ -160,6 +160,35 @@ class EnclaveProject(BaseModel):
 
     def _all_success(self, metrics):
         return all(info.get('status') == DatasetStatus.SUCCESS.value for info in metrics.values())
+    
+    def _any_success(self, metrics):
+        return any(info.get('status') == DatasetStatus.SUCCESS.value for info in metrics.values())
+    
+    def force_start(self):
+        """
+        The force start would add a special file in the launch directory if the project has not started.
+        This would allow the enclave to start the project even if atleast one of the data owner has approved the job.
+        it checks the metrics file to see if atleast one dataset is in success state and then it would do force start
+        or it would throw an error if no datasets are in success state.
+        """
+        metrics = self._get_metrics()
+        if not metrics:
+            logger.warning("Metrics not found. Cannot force start the project.")
+            return
+        
+        if not self._any_success(metrics):
+            logger.error("No datasets in success state. Cannot force start the project.")
+            return
+        
+        # Create a special file to indicate force start
+        launch_dir = self.client.app_data("enclave", datasite=self.email) / "jobs" / "launch" / self.project_name
+        if not launch_dir.exists():
+            logger.error(f"Launch directory {launch_dir} does not exist. Cannot force start the project.")
+            return
+        force_start_file = launch_dir / "force_start.ext"
+        force_start_file.touch()
+        logger.info(f"Force start file created . The project will be started by the enclave."
+                    + "\n Kindly call .output to check if the output is available.")
 
     def status(self, block: bool = False) -> str:
         console = Console()
