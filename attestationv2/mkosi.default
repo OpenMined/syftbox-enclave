@@ -1,0 +1,23 @@
+[Distribution]
+Distribution=ubuntu
+Release=22.04
+Architecture=amd64
+
+[Output]
+Format=disk
+Bootable=yes
+Output=sev-test.raw
+Partition=esp,root
+
+[Packages]
+# minimal runtime packages
+ca-certificates
+bash
+
+[Content]
+# copy the compiled Go binary into /usr/bin inside the image
+File=main:/usr/bin/main
+
+[Kernel]
+Init=/usr/bin/main
+
