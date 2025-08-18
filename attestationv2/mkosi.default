@@ -10,9 +10,20 @@ Output=sev-test.raw
 Partition=esp,root
 
 [Packages]
-# minimal runtime packages
-ca-certificates
-bash
+Packages=
+    apt
+    dbus
+    grub-efi-amd64-signed
+    iproute2
+    linux-virtual
+    netplan.io
+    openssh-server
+    openssl
+    shim-signed
+    sudo
+    systemd
+    udev
+    vim
 
 [Content]
 # copy the compiled Go binary into /usr/bin inside the image
@@ -20,4 +31,7 @@ File=main:/usr/bin/main
 
 [Kernel]
 Init=/usr/bin/main
+
+[Build]
+ToolsTree=default
 
