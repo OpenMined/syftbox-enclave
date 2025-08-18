@@ -180,5 +180,5 @@ cython_debug/
 datasets/
 
 # Mkosi Specific
-image.raw
+image*
 mkosi.tools
