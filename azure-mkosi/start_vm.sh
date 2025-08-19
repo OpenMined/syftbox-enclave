@@ -14,5 +14,8 @@ qemu-system-x86_64 \
   -smp 4 \
   -m 4G \
   -drive if=virtio,format=raw,file="${FILE}" \
-  -device virtio-net-pci,netdev=net0 --netdev user,id=net0,hostfwd=tcp::2222-:22 \
-  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE.fd
+  -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+  -device virtio-net-pci,netdev=net0 \
+  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE.fd \
+  -drive if=pflash,format=raw,file=/usr/share/OVMF/OVMF_VARS.fd \
+  -serial mon:stdio
