@@ -1,0 +1,8 @@
+
+
+mkdir <folder>
+zstdcat test1.initrd | cpio -idmv -D <folder>
+
+mkosi build --force -o test1 && \
+ mkosi build --force -o test2 &&  \
+ sudo diffoscope --exclude-command=stat test1 test2 --html-dir output
