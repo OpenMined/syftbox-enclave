@@ -1,0 +1,11 @@
+[Unit]
+Description=main
+
+[Service]
+ExecStart=/usr/bin/main
+User=root
+Group=root
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

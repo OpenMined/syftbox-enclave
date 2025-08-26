@@ -1,1 +1,1 @@
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o builds/main main.go
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o mkosi.extra/usr/bin/main main.go
