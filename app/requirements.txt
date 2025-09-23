@@ -1,4 +1,4 @@
-cryptography==44.0.3
+cryptography
 syft-core
 loguru>=0.7.3
 pyyaml
